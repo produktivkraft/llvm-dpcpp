@@ -23,6 +23,7 @@ cmake --preset sycl -S$PWD/llvm -B$PWD/build-sycl -DCMAKE_BUILD_TYPE=Debug
 cmake --build $PWD/build-sycl --target libsycldevice
 cmake --build $PWD/build-sycl --target libsycl.so
 cmake --build $PWD/build-sycl --target libsycl-preview.so
+cmake --build $PWD/build-sycl --target sycl-ls
 
 cmake --build $PWD/build-sycl --target help >_demos/cmake.sycl.target.help.log
 
@@ -31,6 +32,7 @@ cmake --build $PWD/build-sycl --target help >_demos/cmake.sycl.target.help.log
 # TODO: can we use `-sycl-device-library-location` in CMD ?
 
 # find build-sycl/lib -name "libsycl*.o" -printf "%f\n" | xargs -d"\n" -I{} echo {}
+find build-sycl/bin -name "sycl*" -printf "%f\n" | xargs -d"\n" -I{} ln -s $PWD/build-sycl/bin/{} $PWD/build/bin/
 find build-sycl/lib -name "libsycl*.o" -printf "%f\n" | xargs -d"\n" -I{} ln -s $PWD/build-sycl/lib/{} $PWD/build/lib/
 find build-sycl/lib -name "libsycl*.so*" -printf "%f\n" | xargs -d"\n" -I{} ln -s $PWD/build-sycl/lib/{} $PWD/build/lib/
 find build-sycl/lib -name "libsycl*.a*" -printf "%f\n" | xargs -d"\n" -I{} ln -s $PWD/build-sycl/lib/{} $PWD/build/lib/
