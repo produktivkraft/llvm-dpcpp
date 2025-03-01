@@ -74,6 +74,13 @@ private:
   friend struct detail::LaunchConfigAccess;
 };
 
+#ifdef __cpp_deduction_guides
+// CTAD work-around to avoid warning from GCC when using default deduction
+// guidance.
+launch_config(detail::AllowCTADTag)
+    -> launch_config<void, empty_properties_t, void>;
+#endif // __cpp_deduction_guides
+
 namespace detail {
 // Helper for accessing the members of launch_config.
 template <typename LCRangeT, typename LCPropertiesT> struct LaunchConfigAccess {
@@ -92,15 +99,16 @@ template <typename LCRangeT, typename LCPropertiesT> struct LaunchConfigAccess {
 template <typename CommandGroupFunc, typename PropertiesT>
 void submit_impl(queue &Q, PropertiesT Props, CommandGroupFunc &&CGF,
                  const sycl::detail::code_location &CodeLoc) {
-  Q.submit_without_event(Props, std::forward<CommandGroupFunc>(CGF), CodeLoc);
+  Q.submit_without_event<__SYCL_USE_FALLBACK_ASSERT>(
+      Props, detail::type_erased_cgfo_ty{CGF}, CodeLoc);
 }
 
 template <typename CommandGroupFunc, typename PropertiesT>
 event submit_with_event_impl(queue &Q, PropertiesT Props,
                              CommandGroupFunc &&CGF,
                              const sycl::detail::code_location &CodeLoc) {
-  return Q.submit_with_event(Props, std::forward<CommandGroupFunc>(CGF),
-                             nullptr, CodeLoc);
+  return Q.submit_with_event<__SYCL_USE_FALLBACK_ASSERT>(
+      Props, detail::type_erased_cgfo_ty{CGF}, nullptr, CodeLoc);
 }
 } // namespace detail
 

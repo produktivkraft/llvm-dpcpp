@@ -1,7 +1,9 @@
 // RUN: %{build} -o %t1.out
 // RUN: %{run} %t1.out
-// XFAIL: (opencl && cpu)
-// XFAIL-TRACKER: https://github.com/oneapi-src/unified-runtime/issues/2440
+// clang-format off
+// UNSUPPORTED: opencl
+// UNSUPPORTED-TRACKER: https://github.com/oneapi-src/unified-runtime/issues/2440
+// clang-format on
 
 /**
  * Test of the queue::fill interface with a range of pattern sizes and values.
@@ -19,13 +21,14 @@
 
 constexpr size_t MaxPatternSize{32}; // Bytes.
 constexpr size_t NumElements{10};
-constexpr size_t NumRepeats{1};
 constexpr bool verbose{false};
 
 template <size_t PatternSize, bool SameValue>
 int test(sycl::queue &q, uint8_t firstValue = 0) {
   using T = std::array<uint8_t, PatternSize>;
   T value{};
+
+  // Initialize the pattern value on host.
   for (size_t i{0}; i < PatternSize; ++i) {
     if constexpr (SameValue) {
       value[i] = firstValue;
@@ -34,13 +37,17 @@ int test(sycl::queue &q, uint8_t firstValue = 0) {
     }
   }
 
+  // Allocate memory on the device.
   T *dptr{sycl::malloc_device<T>(NumElements, q)};
-  for (size_t repeat{0}; repeat < NumRepeats; ++repeat) {
-    q.fill(dptr, value, NumElements).wait();
-  }
 
+  // Fill the device memory with the pattern.
+  q.fill(dptr, value, NumElements).wait();
+
+  // Copy back the filled memory to host.
   std::array<T, NumElements> host{};
   q.copy<T>(dptr, host.data(), NumElements).wait();
+
+  // Validate whether the filled memory contains the expected values.
   bool pass{true};
   for (size_t i{0}; i < NumElements; ++i) {
     for (size_t j{0}; j < PatternSize; ++j) {
@@ -49,8 +56,11 @@ int test(sycl::queue &q, uint8_t firstValue = 0) {
       }
     }
   }
+
+  // Release the device memory allocation.
   sycl::free(dptr, q);
 
+  // Print info on failure or in verbose mode.
   if (!pass || verbose) {
     printf("Pattern size %3zu bytes, %s values (initial %3u) %s\n", PatternSize,
            (SameValue ? " equal" : "varied"), firstValue,
